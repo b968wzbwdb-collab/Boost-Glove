@@ -1714,3 +1714,76 @@ window.__rga = { get sim() { return sim; }, startMatch, pause, resume, cfg: () =
 })();
 
 </script>
+
+<audio id="bgMusic"></audio>
+
+<div id="musicPlayer" style="
+    position:fixed;
+    bottom:15px;
+    right:15px;
+    z-index:99999;
+    background:#222;
+    color:white;
+    padding:12px;
+    border-radius:12px;
+    font-family:Arial;
+">
+    <div id="songName">🎵 Loading playlist...</div>
+    <button id="musicBtn">▶ Play Music</button>
+    <button id="nextBtn">⏭ Next</button>
+</div>
+
+<script>
+const songs = [
+    "Ng bch.mp3",
+    "Different Heaven - Nekozilla.mp3",
+    "Elektronomia - The Sky High.mp3",
+    "Ship Wrek - Ark.mp3",
+    "Syn Cole - Feel Good.mp3",
+    "TULE, Chris Linton - Fearless.mp3"
+];
+
+const music = document.getElementById("bgMusic");
+const musicBtn = document.getElementById("musicBtn");
+const nextBtn = document.getElementById("nextBtn");
+const songName = document.getElementById("songName");
+
+let currentSong = 0;
+
+function playSong() {
+    music.src = songs[currentSong];
+    songName.textContent = "🎵 " + songs[currentSong];
+    music.play().then(() => {
+        musicBtn.textContent = "⏸ Pause Music";
+    }).catch(() => {
+        musicBtn.textContent = "▶ Play Music";
+    });
+}
+
+// Automatically play next song
+music.addEventListener("ended", () => {
+    currentSong = (currentSong + 1) % songs.length;
+    playSong();
+});
+
+// Play / Pause
+musicBtn.addEventListener("click", () => {
+    if (music.paused) {
+        if (!music.src) {
+            playSong();
+        } else {
+            music.play();
+            musicBtn.textContent = "⏸ Pause Music";
+        }
+    } else {
+        music.pause();
+        musicBtn.textContent = "▶ Play Music";
+    }
+});
+
+// Next song
+nextBtn.addEventListener("click", () => {
+    currentSong = (currentSong + 1) % songs.length;
+    playSong();
+});
+</script>
