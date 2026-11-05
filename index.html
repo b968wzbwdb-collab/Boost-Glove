@@ -271,7 +271,7 @@ input[type=range] { width: 100%; accent-color: var(--yellow); height: 28px; }
 const W = 1800, H = 900, FLOOR = 810;
 const G = 1500;            // car gravity (units/s^2)
 const BGRAV = 1150;        // ball gravity
-const BR = 30, BM = 0.32;  // lighter ball (car mass = 1)
+const BR = 40.5, BM = 0.55;  // ball radius (+35%); mass unchanged
 const RING = { rx: 72, ry: 120, cy: 480, lx: 210, rx2: 1590 };
 const MATCH_TIME = 150;    // exactly 2:30
 const COOLDOWN = 3.0;      // exactly 3 s punch cooldown
@@ -534,14 +534,13 @@ function hardBounds(c) {
 function ballStep(S) {
   const b = S.ball, dt = DT;
   b.vy += BGRAV * dt;
-  b.vx *= (1 - 0.085 * dt); // slightly more ground/air drag for controllable play
+  b.vx *= (1 - 0.06 * dt);
   b.x += b.vx * dt; b.y += b.vy * dt;
   b.rot += b.vx / BR * dt;
   if (b.y + BR > FLOOR) {
     b.y = FLOOR - BR;
     if (b.vy > 0) {
-      let nv = b.vy * 0.88; // higher, livelier floor bounce
-      if (nv < MIN_BOUNCE) nv = MIN_BOUNCE;
+      let nv = b.vy * 0.78; if (nv < MIN_BOUNCE) nv = MIN_BOUNCE;
       if (b.vy > 420) S.events.push({ type: 'bounce', x: b.x, y: FLOOR, power: b.vy });
       b.vy = -nv; b.vx *= 0.975;
       if (Math.abs(b.vx) < 45) b.vx += (b.x < W / 2 ? 1 : -1) * 45;   // never rests in place
@@ -650,7 +649,7 @@ function punchKnock(S) {
     if (!g.hitBall) {
       const dx = b.x - gx, dy = b.y - gy;
       if (dx * dx + dy * dy < (gr + BR) * (gr + BR)) {
-        g.hitBall = true; b.vx = b.vx * 0.2 + fx * 880 + c.vx * 0.6; b.vy = b.vy * 0.2 + fy * 880 + c.vy * 0.6 - 60;
+        g.hitBall = true; b.vx = b.vx * 0.2 + fx * 1000 + c.vx * 0.6; b.vy = b.vy * 0.2 + fy * 1000 + c.vy * 0.6 - 60;
         c.vx -= fx * 90; c.vy -= fy * 90; S.stats.punchHits++;
         S.events.push({ type: 'punchHit', x: gx + fx * GLOVE_R, y: gy + fy * GLOVE_R, car: i, target: 'ball' });
       }
