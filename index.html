@@ -1,4 +1,4 @@
-<title>Rocket Glove Arena</title>
+<title>Rocket Rings</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,6 +42,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--yellow); ou
 
 /* ---------- banner ---------- */
 #bangFlash { position: fixed; inset: 0; z-index: 20; pointer-events: none; background: #fff; opacity: 0; }
+#voidOverlay { position: fixed; inset: 0; z-index: 1000000; pointer-events: none; background: #000; opacity: 0; }
+#voidOverlay.active { animation: voidBlackout 2.5s steps(1, end) forwards; }
+@keyframes voidBlackout { 0%, 99.9% { opacity: 1; } 100% { opacity: 0; } }
 #banner { position: absolute; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; font: 400 clamp(54px, 22vh, 140px)/1 var(--display); color: #fff; -webkit-text-stroke: 3px #0d1b26; paint-order: stroke fill; text-shadow: 0 6px 0 rgba(0,0,0,.28); opacity: 0; }
 #banner.show { animation: pop .75s cubic-bezier(.2, 1.4, .4, 1) both; }
 #banner.goal { color: var(--yellow); animation-duration: 1.6s; }
@@ -76,7 +79,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--yellow); ou
 .logo { margin: 0; font: 400 clamp(30px, 12vh, 58px)/.92 var(--display); letter-spacing: .01em; color: #fff; text-shadow: 0 4px 0 #0d1b26, 0 0 0 #000; }
 .logo span { color: var(--yellow); }
 .sub { margin: 0 0 2px; color: var(--muted); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
-.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.seg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 .seg button { padding: 7px 4px 6px; border-radius: 10px; border: 2px solid var(--line); background: rgba(255,255,255,.06); font: 700 13px/1.1 var(--body); letter-spacing: .04em; text-transform: uppercase; display: flex; flex-direction: column; gap: 2px; align-items: center; }
 .seg button small { font: 500 11px/1.1 var(--body); text-transform: none; color: var(--muted); letter-spacing: 0; }
 .seg button.on { border-color: var(--yellow); background: rgba(255,238,0,.14); }
@@ -131,6 +134,15 @@ input[type=range] { width: 100%; accent-color: var(--yellow); height: 28px; }
   .side { gap: 6px; padding: 8px 14px; } .big { font-size: 22px; padding: 9px; } .opt { gap: 5px; }
 }
 @media (prefers-reduced-motion: reduce) { #banner.show { animation-duration: .01s; } #rotate svg { animation: none; } }
+
+.keybind-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+.keybind-player{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px;min-width:0}
+.keybind-player strong{display:block;margin-bottom:6px;color:#ffe84a;font-size:12px}
+.keybind-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:5px 0;font-size:12px}
+.keybind-row button{min-width:58px;padding:6px 8px;border-radius:7px;font-weight:800;font-size:11px}
+.keybind-row button.waiting{background:#ffe84a;color:#111}
+@media(max-width:560px){.keybind-grid{grid-template-columns:1fr}}
+
 </style>
 
 <div id="app">
@@ -164,15 +176,17 @@ input[type=range] { width: 100%; accent-color: var(--yellow); height: 28px; }
 
   <div id="banner"></div>
   <div id="bangFlash" aria-hidden="true"></div>
+  <div id="voidOverlay" aria-hidden="true"></div>
 
   <section id="scrMenu" class="screen">
     <div class="side">
-      <h1 class="logo">ROCKET<br><span>GLOVE</span> ARENA</h1>
+      <h1 class="logo">ROCKET<br><span>RINGS</span></h1>
       <p class="sub">2:30 car battle soccer</p>
       <p class="sub" id="coinBalance">🪙 0 COINS</p>
       <div class="seg" id="modeSeg" role="radiogroup" aria-label="Game mode">
         <button data-mode="ai" role="radio">1 Player<small>vs CPU</small></button>
         <button data-mode="local" role="radio">Local 1v1<small>keyboard for P2</small></button>
+        <button data-mode="2v2" role="radio">2v2<small>2 keyboards vs 2 CPU</small></button>
         <button data-mode="online" role="radio" disabled title="Online play needs a game server, which this page does not have">Online<small>needs server</small></button>
       </div>
       <button id="btnPlay" class="big">PLAY</button>
@@ -200,6 +214,12 @@ input[type=range] { width: 100%; accent-color: var(--yellow); height: 28px; }
       <div class="set"><span>Control size</span><div class="chips" id="setSize"><button class="chip" data-v="0.85">SMALL</button><button class="chip" data-v="1">MEDIUM</button><button class="chip" data-v="1.2">LARGE</button></div></div>
       <div class="set"><label for="setOp">Control opacity</label><input id="setOp" type="range" min="35" max="100"></div>
       <div class="set"><span>CPU difficulty</span><div class="chips" id="setAi"><button class="chip" data-v="0">EASY</button><button class="chip" data-v="1">NORMAL</button><button class="chip" data-v="2">HARD</button></div></div>
+      <div class="set"><span>Keyboard controls (P1 + P2)</span><div id="keybindSettings" class="keybind-grid"></div></div>
+      <p id="keybindStatus" class="hint" role="status" aria-live="polite">Select a key to change it. Every action must use a unique key.</p>
+      <div class="set"><span>Own music</span><div class="chips"><button class="chip" id="btnAddMp3" type="button">ADD MP3 FILES</button><button class="chip" id="btnClearMp3" type="button">CLEAR MY MUSIC</button></div></div>
+      <div class="set"><span>Keep default songs</span><div class="chips"><button class="chip on" id="btnKeepDefaults" type="button" aria-pressed="true">ON</button><span class="hint">ON adds your songs to the original playlist. OFF plays only your MP3s.</span></div></div>
+      <input id="mp3Picker" type="file" accept=".mp3,audio/mpeg" multiple hidden>
+      <p id="ownMusicStatus" class="hint" role="status" aria-live="polite">Add MP3 files from your device. Your files stay in this browser.</p>
       <div class="set"><span>Fullscreen</span><div class="chips"><button class="chip" id="btnFs">TOGGLE</button></div></div>
       <div class="set"><label for="devCode">Developer code</label><div class="chips"><input id="devCode" type="text" placeholder="Enter code" autocomplete="off" spellcheck="false"><button class="chip" id="btnRedeemCode">REDEEM</button></div></div>
       <p id="devCodeStatus" class="hint" role="status" aria-live="polite">Enter a developer code.</p>
@@ -215,7 +235,7 @@ input[type=range] { width: 100%; accent-color: var(--yellow); height: 28px; }
         <div><h3>AIR CONTROL</h3><p>The same stick works in the air. It points the nose, so tilt the nose down to fly forward. Left and right also nudge you sideways.</p></div>
         <div><h3>PUNCH</h3><p>The spring glove shoots out and launches the ball or knocks the rival back. It recharges for exactly 3 seconds.</p></div>
         <div><h3>SCORE</h3><p>The whole ball must pass through the other ring. Player 1 scores in the right ring, Player 2 in the left. Most goals after 2:30 wins.</p></div>
-        <div><h3>KEYBOARD</h3><p>P1: W A S D, Space boost, F punch. P2: arrow keys, Enter boost, / punch. Against the CPU the arrow keys work for P1 too.</p></div>
+        <div><h3>KEYBOARD</h3><p>Keyboard controls are fully remappable in Settings. P1 and P2 must each use unique keys; no two actions can share a key. 2v2: two keyboard players team up against two CPUs.</p></div>
       </div>
     </div>
   </section>
@@ -240,18 +260,18 @@ input[type=range] { width: 100%; accent-color: var(--yellow); height: 28px; }
 <div id="rotate">
   <svg viewBox="0 0 64 64" fill="none" stroke="#99d9ea" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><rect x="19" y="6" width="26" height="52" rx="5"/><path d="M28 52h8"/></svg>
   ROTATE YOUR PHONE
-  <p>Rocket Glove Arena is played sideways, with a thumb on each side.</p>
+  <p>Rocket Rings is played sideways, with a thumb on each side.</p>
 </div>
 
 <script>
-/* Rocket Glove Arena - physics, match rules and AI. No DOM access, so it can be tested in Node. */
+/* Rocket Rings - physics, match rules and AI. No DOM access, so it can be tested in Node. */
 (function (root) {
 'use strict';
 
 const W = 1800, H = 900, FLOOR = 810;
 const G = 1500;            // car gravity (units/s^2)
 const BGRAV = 1150;        // ball gravity
-const BR = 30, BM = 0.55;  // ball radius, mass (car mass = 1)
+const BR = 30, BM = 0.32;  // lighter ball (car mass = 1)
 const RING = { rx: 72, ry: 120, cy: 480, lx: 210, rx2: 1590 };
 const MATCH_TIME = 150;    // exactly 2:30
 const COOLDOWN = 3.0;      // exactly 3 s punch cooldown
@@ -296,13 +316,14 @@ function create(opts) {
   opts = opts || {};
   const S = {
     mode: opts.mode || 'ai', demo: !!opts.demo, aiLevel: opts.aiLevel == null ? 1 : opts.aiLevel,
-    cars: [makeCar(0, (opts.styles || [])[0]), makeCar(1, (opts.styles || [])[1])],
+    carCount: opts.mode === '2v2' && !opts.demo ? 4 : 2,
+    cars: (opts.mode === '2v2' && !opts.demo ? [0,1,2,3] : [0,1]).map(i => makeCar(i < 2 ? 0 : 1, (opts.styles || [])[i % 2])),
     ball: { x: W / 2, y: FLOOR - 220, vx: 0, vy: 0, rot: 0, slowT: 0 },
     score: [0, 0], t: MATCH_TIME, phase: 'countdown', phaseT: 0, goT: 0, timeScale: 1,
     acc: 0, events: [], aiT: 0, simT: 0, lastBallEv: -1, lastCarEv: -1, lastCount: 4,
     lastGoal: null, ai: [false, false], stats: { goals: 0, punches: 0, punchHits: 0, boostTime: 0 }
   };
-  S.ai = S.demo ? [true, true] : (S.mode === 'ai' ? [false, true] : [false, false]);
+  S.ai = S.demo ? [true, true] : (S.mode === 'ai' ? [false, true] : (S.mode === '2v2' ? [false, false, true, true] : [false, false]));
   kickoff(S);
   S.step = (dt) => step(S, dt);
   S.setInput = (i, v) => {
@@ -319,8 +340,9 @@ function create(opts) {
 
 function kickoff(S) {
   S.cars.forEach((c, i) => {
-    c.x = i === 0 ? 430 : W - 430; c.y = FLOOR - 46; c.th = 0; c.w = 0; c.vx = 0; c.vy = 0;
-    c.s = i === 0 ? 1 : -1; c.vs = c.s; c.boost = 100; c.boostLock = false; c.boostOn = false;
+    const isFour = S.cars.length === 4, leftTeam = isFour ? i < 2 : i === 0;
+    c.x = isFour ? (leftTeam ? (i === 0 ? 350 : 590) : (i === 2 ? W - 350 : W - 590)) : (i === 0 ? 430 : W - 430); c.y = FLOOR - 46; c.th = 0; c.w = 0; c.vx = 0; c.vy = 0;
+    c.s = leftTeam ? 1 : -1; c.vs = c.s; c.boost = 100; c.boostLock = false; c.boostOn = false;
     c.glove.ext = 0; c.glove.extV = 0; c.glove.t = -1; c.glove.cd = 0;
     c.in.punch = false; c.revT = 0; c.rightT = 0; c.stuckT = 0; c.wheelRot = 0;
   });
@@ -360,18 +382,18 @@ function sub(S) {
   S.aiT += DT;
   if (S.aiT >= 1 / 30) {
     S.aiT = 0;
-    for (let i = 0; i < 2; i++) if (S.ai[i] && live) aiThink(S, i);
+    for (let i = 0; i < S.cars.length; i++) if (S.ai[i] && live) aiThink(S, i);
   }
 
-  for (let i = 0; i < 2; i++) carStep(S, S.cars[i], live ? S.cars[i].in : null, i);
+  for (let i = 0; i < S.cars.length; i++) carStep(S, S.cars[i], live ? S.cars[i].in : null, i);
   ballStep(S);
   if (live) punchKnock(S);
   for (let k = 0; k < 2; k++) {
-    for (let i = 0; i < 2; i++) carBall(S, S.cars[i], i);
+    for (let i = 0; i < S.cars.length; i++) carBall(S, S.cars[i], i);
     clampBall(S.ball);
   }
   carCar(S);
-  for (let i = 0; i < 2; i++) hardBounds(S.cars[i]);
+  for (let i = 0; i < S.cars.length; i++) hardBounds(S.cars[i]);
   if (live) goalCheck(S);
 }
 
@@ -512,13 +534,14 @@ function hardBounds(c) {
 function ballStep(S) {
   const b = S.ball, dt = DT;
   b.vy += BGRAV * dt;
-  b.vx *= (1 - 0.06 * dt);
+  b.vx *= (1 - 0.085 * dt); // slightly more ground/air drag for controllable play
   b.x += b.vx * dt; b.y += b.vy * dt;
   b.rot += b.vx / BR * dt;
   if (b.y + BR > FLOOR) {
     b.y = FLOOR - BR;
     if (b.vy > 0) {
-      let nv = b.vy * 0.78; if (nv < MIN_BOUNCE) nv = MIN_BOUNCE;
+      let nv = b.vy * 0.88; // higher, livelier floor bounce
+      if (nv < MIN_BOUNCE) nv = MIN_BOUNCE;
       if (b.vy > 420) S.events.push({ type: 'bounce', x: b.x, y: FLOOR, power: b.vy });
       b.vy = -nv; b.vx *= 0.975;
       if (Math.abs(b.vx) < 45) b.vx += (b.x < W / 2 ? 1 : -1) * 45;   // never rests in place
@@ -584,10 +607,10 @@ function carBall(S, c, idx) {
 }
 
 function carCar(S) {
-  const A = S.cars[0], B = S.cars[1];
-  const ca = CIRCS.concat([gloveCircle(A)]), cb = CIRCS.concat([gloveCircle(B)]);
-  for (let i = 0; i < ca.length; i++) {
-    for (let j = 0; j < cb.length; j++) {
+  for (let ai = 0; ai < S.cars.length; ai++) for (let bi = ai + 1; bi < S.cars.length; bi++) {
+    const A = S.cars[ai], B = S.cars[bi];
+    const ca = CIRCS.concat([gloveCircle(A)]), cb = CIRCS.concat([gloveCircle(B)]);
+    for (let i = 0; i < ca.length; i++) for (let j = 0; j < cb.length; j++) {
       const ra = circleWorld(A, ca[i]), rb = circleWorld(B, cb[j]);
       const pax = A.x + ra.rx, pay = A.y + ra.ry, pbx = B.x + rb.rx, pby = B.y + rb.ry;
       let dx = pbx - pax, dy = pby - pay;
@@ -618,8 +641,8 @@ function carCar(S) {
 /* ---------- punches ---------- */
 function punchKnock(S) {
   const b = S.ball;
-  for (let i = 0; i < 2; i++) {
-    const c = S.cars[i], o = S.cars[1 - i], g = c.glove;
+  for (let i = 0; i < S.cars.length; i++) {
+    const c = S.cars[i], g = c.glove;
     if (g.t < 0) continue;
     const gc = gloveCircle(c), r = circleWorld(c, gc);
     const gx = c.x + r.rx, gy = c.y + r.ry, gr = GLOVE_R + 6;
@@ -627,29 +650,16 @@ function punchKnock(S) {
     if (!g.hitBall) {
       const dx = b.x - gx, dy = b.y - gy;
       if (dx * dx + dy * dy < (gr + BR) * (gr + BR)) {
-        g.hitBall = true;
-        b.vx = b.vx * 0.2 + fx * 1000 + c.vx * 0.6;
-        b.vy = b.vy * 0.2 + fy * 1000 + c.vy * 0.6 - 60;
-        c.vx -= fx * 90; c.vy -= fy * 90;
-        S.stats.punchHits++;
+        g.hitBall = true; b.vx = b.vx * 0.2 + fx * 880 + c.vx * 0.6; b.vy = b.vy * 0.2 + fy * 880 + c.vy * 0.6 - 60;
+        c.vx -= fx * 90; c.vy -= fy * 90; S.stats.punchHits++;
         S.events.push({ type: 'punchHit', x: gx + fx * GLOVE_R, y: gy + fy * GLOVE_R, car: i, target: 'ball' });
       }
     }
-    if (!g.hitOpp) {
-      let hit = false;
-      const cb = CIRCS.concat([gloveCircle(o)]);
-      for (let k = 0; k < cb.length && !hit; k++) {
-        const ro = circleWorld(o, cb[k]);
-        const dx = o.x + ro.rx - gx, dy = o.y + ro.ry - gy, rr = gr + cb[k].r;
-        if (dx * dx + dy * dy < rr * rr) hit = true;
-      }
-      if (hit) {
-        g.hitOpp = true;
-        o.vx += fx * 680; o.vy += fy * 680 - 140; o.w += (fx >= 0 ? 1 : -1) * 4;
-        c.vx -= fx * 120; c.vy -= fy * 120;
-        S.stats.punchHits++;
-        S.events.push({ type: 'punchHit', x: gx + fx * GLOVE_R, y: gy + fy * GLOVE_R, car: i, target: 'car' });
-      }
+    if (!g.hitOpp) for (let oi = 0; oi < S.cars.length; oi++) {
+      if (oi === i || (S.cars.length === 4 && (oi < 2) === (i < 2))) continue;
+      const o = S.cars[oi], cb = CIRCS.concat([gloveCircle(o)]); let hit = false;
+      for (let k = 0; k < cb.length && !hit; k++) { const ro = circleWorld(o, cb[k]); const dx = o.x + ro.rx - gx, dy = o.y + ro.ry - gy; if (dx * dx + dy * dy < (gr + cb[k].r) ** 2) hit = true; }
+      if (hit) { g.hitOpp = true; o.vx += fx * 560; o.vy += fy * 560 - 120; o.w += (fx >= 0 ? 1 : -1) * 4; c.vx -= fx * 120; c.vy -= fy * 120; S.stats.punchHits++; S.events.push({ type: 'punchHit', x: gx + fx * GLOVE_R, y: gy + fy * GLOVE_R, car: i, target: 'car' }); break; }
     }
   }
 }
@@ -674,27 +684,30 @@ function goalCheck(S) {
 
 /* ---------- AI ---------- */
 function aiThink(S, i) {
-  const c = S.cars[i], o = S.cars[1 - i], b = S.ball, d = i === 0 ? 1 : -1;
-  const lvl = S.aiLevel;                      // 0 easy, 1 normal, 2 hard
+  const c = S.cars[i], b = S.ball, teamLeft = S.cars.length === 4 ? i < 2 : i === 0, d = teamLeft ? 1 : -1;
+  const enemies = S.cars.filter((q,j) => j !== i && (S.cars.length !== 4 || (j < 2) !== teamLeft));
+  const o = enemies.sort((a,b) => Math.hypot(a.x-c.x,a.y-c.y)-Math.hypot(b.x-c.x,b.y-c.y))[0] || S.cars[1-i];
+  const lvl = Math.max(0, S.aiLevel - 1);       // all CPU tiers softened: NORMAL now behaves like EASY
   const inp = c.in;
   inp.sx = 0; inp.sy = 0; inp.boost = false;
-  const ownX = i === 0 ? RING.lx : RING.rx2;
-  const lead = 0.12 + 0.1 * lvl;
-  const bx = clamp(b.x + b.vx * lead, BR, W - BR), by = clamp(b.y + b.vy * lead * 0.8, BR, FLOOR - BR);
+  const ownX = teamLeft ? RING.lx : RING.rx2;
+  const lead = 0.035 + 0.045 * lvl;
+  let bx = clamp(b.x + b.vx * lead, BR, W - BR); const by = clamp(b.y + b.vy * lead * 0.8, BR, FLOOR - BR);
+  if (S.cars.length === 4 && i === 3) { const defendX = ownX + d * 250; if ((bx - ownX) * d < 650) bx = clamp(bx - d * 180, BR, W - BR); }
   const dx = bx - c.x, dy = by - c.y, dist = Math.hypot(dx, dy);
   const front = dx * d;
   const high = by < FLOOR - 170;
   const air = !c.grounded;
-  const noise = lvl === 0 ? 70 : (lvl === 1 ? 20 : 0);
+  const noise = lvl === 0 ? 190 : (lvl === 1 ? 115 : 65);
 
   // punch logic (ground or air): work in the car's own frame
   if (c.glove.cd <= 0) {
     const fx = c.s * Math.cos(c.th), fy = c.s * Math.sin(c.th);
     const along = (b.x - c.x) * fx + (b.y - c.y) * fy, across = -(b.x - c.x) * fy + (b.y - c.y) * fx;
-    const chance = 0.3 + 0.25 * lvl;
+    const chance = 0.07 + 0.09 * lvl;
     if (along > 60 && along < 200 && Math.abs(across) < 75 && fx * d > -0.25 && Math.random() < chance) inp.punch = true;
     const oalong = (o.x - c.x) * fx + (o.y - c.y) * fy, oacross = -(o.x - c.x) * fy + (o.y - c.y) * fx;
-    if (oalong > 60 && oalong < 200 && Math.abs(oacross) < 70 && Math.random() < 0.06 * (lvl + 1)) inp.punch = true;
+    if (oalong > 60 && oalong < 200 && Math.abs(oacross) < 70 && Math.random() < 0.025 * (lvl + 1)) inp.punch = true;
   }
 
   let fly = false, tx = 0, ty = 0;
@@ -745,7 +758,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = root.Sim;
 
 </script>
 <script>
-/* Rocket Glove Arena - rendering, input, audio, menus */
+/* Rocket Rings - rendering, input, audio, menus */
 (function () {
 'use strict';
 // Compatibility fallback for browsers that do not implement Canvas roundRect.
@@ -793,6 +806,7 @@ const vehicleSpriteImages = VEHICLE_SPRITES.map(src => { const im = new Image();
 
 const DEF = {
   vol: 0.7, vib: 1, ctl: 1, op: 0.82, ai: 1, mode: 'ai', p1Name: 'P1', p2Name: 'P2',
+  binds: { p1: { l:'KeyA', r:'KeyD', u:'KeyW', d:'KeyS', boost:'Space', punch:'ShiftLeft' }, p2: { l:'ArrowLeft', r:'ArrowRight', u:'ArrowUp', d:'ArrowDown', boost:'Enter', punch:'ShiftRight' } },
   cust: [
     { design: 0, car: '#3b6fd4', glove: '#e0282e', flame: '#ffb020' },
     { design: 0, car: '#e0282e', glove: '#e0282e', flame: '#4cc9ff' }
@@ -806,6 +820,7 @@ function loadCfg() {
     if (j && typeof j === 'object') {
       for (const k of Object.keys(base)) if (k !== 'cust' && j[k] != null) base[k] = j[k];
       if (Array.isArray(j.cust) && j.cust.length === 2) base.cust = j.cust.map((c, i) => Object.assign({}, base.cust[i], c));
+      if (j.binds && j.binds.p1 && j.binds.p2) { for (const pl of ['p1','p2']) for (const a of ['l','r','u','d','boost','punch']) if (typeof j.binds[pl][a] === 'string') base.binds[pl][a] = j.binds[pl][a]; }
     }
   } catch (e) { /* storage unavailable */ }
   if (base.mode === 'online') base.mode = 'ai';
@@ -1101,7 +1116,8 @@ function startMatch() {
   Aud.init(); sim = newSim(false); state = 'play'; demo = false; parts.length = 0;
   resultShown = false; showScreen(null);
   $('hud').hidden = false; $('ctl').hidden = false;
-  const n = names(); $('n1').textContent = n[0]; $('n2').textContent = n[1];
+  const n = names(); $('n1').textContent = cfg.mode === '2v2' ? 'HUMANS' : n[0]; $('n2').textContent = cfg.mode === '2v2' ? 'CPU TEAM' : n[1];
+  $('ctl').hidden = cfg.mode === '2v2';
   layout();
 }
 function toMenu() { $('hud').hidden = true; $('ctl').hidden = true; showScreen('scrMenu'); startDemo(); }
@@ -1153,12 +1169,41 @@ btnPunch.addEventListener('pointerdown', (e) => { punchQ[0] = true; btnPunch.cla
 ['pointerup', 'pointercancel', 'pointerleave'].forEach((n) => btnPunch.addEventListener(n, () => btnPunch.classList.remove('down')));
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-const KEYMAP = {
-  p1: { l: ['KeyA'], r: ['KeyD'], u: ['KeyW'], d: ['KeyS'], boost: ['Space'], punch: ['KeyF'] },
-  p2: { l: ['ArrowLeft'], r: ['ArrowRight'], u: ['ArrowUp'], d: ['ArrowDown'], boost: ['Enter', 'NumpadEnter'], punch: ['Slash', 'Period'] }
-};
-const KEYMAP_AI_P1 = { l: ['KeyA', 'ArrowLeft'], r: ['KeyD', 'ArrowRight'], u: ['KeyW', 'ArrowUp'], d: ['KeyS', 'ArrowDown'], boost: ['Space', 'ShiftRight', 'ShiftLeft'], punch: ['KeyF', 'Slash', 'KeyZ'] };
-const allKeys = new Set(['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Slash']);
+const KEY_ACTIONS = [['l','LEFT'],['r','RIGHT'],['u','UP'],['d','DOWN'],['boost','BOOST'],['punch','PUNCH']];
+const KEYMAP = { p1: {}, p2: {} };
+function refreshKeymaps() {
+  for (const pl of ['p1','p2']) for (const [action] of KEY_ACTIONS) KEYMAP[pl][action] = [cfg.binds[pl][action]];
+}
+refreshKeymaps();
+const KEYMAP_AI_P1 = KEYMAP.p1;
+const keyLabel = (code) => ({Space:'SPACE',ShiftLeft:'L SHIFT',ShiftRight:'R SHIFT',Enter:'ENTER',ArrowLeft:'←',ArrowRight:'→',ArrowUp:'↑',ArrowDown:'↓',NumpadEnter:'NUM ENTER'}[code] || (code.startsWith('Key') ? code.slice(3) : code.startsWith('Digit') ? code.slice(5) : code));
+let waitingBind = null;
+function buildKeybindSettings() {
+  const root = $('keybindSettings'); if (!root) return; root.innerHTML = '';
+  for (const pl of ['p1','p2']) {
+    const card = document.createElement('div'); card.className = 'keybind-player';
+    const title = document.createElement('strong'); title.textContent = pl.toUpperCase(); card.append(title);
+    for (const [action,label] of KEY_ACTIONS) {
+      const row = document.createElement('div'); row.className = 'keybind-row';
+      const name = document.createElement('span'); name.textContent = label; row.append(name);
+      const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = keyLabel(cfg.binds[pl][action]);
+      btn.onclick = () => { waitingBind = {pl,action,btn}; document.querySelectorAll('.keybind-row button').forEach(x=>x.classList.remove('waiting')); btn.classList.add('waiting'); btn.textContent = 'PRESS KEY'; $('keybindStatus').textContent = 'Press a key for '+pl.toUpperCase()+' '+label+'. Escape cancels.'; };
+      row.append(btn); card.append(row);
+    }
+    root.append(card);
+  }
+}
+function handleBindCapture(e) {
+  if (!waitingBind) return;
+  e.preventDefault(); e.stopPropagation();
+  if (e.code === 'Escape') { waitingBind = null; buildKeybindSettings(); $('keybindStatus').textContent = 'Key change cancelled.'; return; }
+  if (!e.code || ['Tab','CapsLock','NumLock','ScrollLock'].includes(e.code)) { $('keybindStatus').textContent = 'Choose a regular keyboard key.'; return; }
+  const {pl,action} = waitingBind;
+  for (const player of ['p1','p2']) for (const [act] of KEY_ACTIONS) if (cfg.binds[player][act] === e.code && !(player === pl && act === action)) { $('keybindStatus').textContent = keyLabel(e.code)+' is already assigned to '+player.toUpperCase()+' '+act.toUpperCase()+'. Choose another key.'; return; }
+  cfg.binds[pl][action] = e.code; saveCfg(); refreshKeymaps(); waitingBind = null; buildKeybindSettings(); $('keybindStatus').textContent = 'Controls saved. All 12 actions have unique keys.';
+}
+window.addEventListener('keydown', handleBindCapture, true);
+const allKeys = new Set(['Space','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown']);
 const anyKey = (list) => list.some((k) => keys[k]);
 window.addEventListener('keydown', (e) => {
   if (allKeys.has(e.code) && state !== 'menu' && screen == null) e.preventDefault();
@@ -1166,7 +1211,7 @@ window.addEventListener('keydown', (e) => {
   if (state === 'play' && screen == null) {
     const m = cfg.mode === 'ai' ? KEYMAP_AI_P1 : KEYMAP.p1;
     if (m.punch.includes(e.code)) punchQ[0] = true;
-    if (cfg.mode === 'local' && KEYMAP.p2.punch.includes(e.code)) punchQ[1] = true;
+    if ((cfg.mode === 'local' || cfg.mode === '2v2') && KEYMAP.p2.punch.includes(e.code)) punchQ[1] = true;
   }
   if (e.code === 'Escape' || e.code === 'KeyP') { if (state === 'play' && screen == null) pause(); else if (screen === 'scrPause') resume(); }
 });
@@ -1184,7 +1229,7 @@ function feedInputs() {
   else { const m = Math.hypot(a.sx, a.sy); if (m > 1) { a.sx /= m; a.sy /= m; } }
   sim.setInput(0, { sx: a.sx, sy: a.sy, boost: touch.boost || anyKey(m1.boost), punch: punchQ[0] });
   punchQ[0] = false;
-  if (cfg.mode === 'local') {
+  if (cfg.mode === 'local' || cfg.mode === '2v2') {
     let b = axis(KEYMAP.p2); const m = Math.hypot(b.sx, b.sy); if (m > 1) { b.sx /= m; b.sy /= m; }
     sim.setInput(1, { sx: b.sx, sy: b.sy, boost: anyKey(KEYMAP.p2.boost), punch: punchQ[1] });
     punchQ[1] = false;
@@ -1228,7 +1273,12 @@ function handleEvents() {
         Aud.goal();
         const explosion = economy.explosion; vibrate([60, 40, 100]); shake = 14; goalSlow = 1;
         const gx = e.side === 0 ? RING.rx2 : RING.lx; ringFlash[e.side === 0 ? 1 : 0] = 1;
-        if (explosion === 'boom') {
+        if (explosion === 'void') {
+          const overlay = $('voidOverlay');
+          overlay.classList.remove('active');
+          void overlay.offsetWidth;
+          overlay.classList.add('active');
+        } else if (explosion === 'boom') {
           burst(gx, RING.cy, 180, { speed: 1050, min: 180, size: 17, color: '#ff8a18', life: 1.15, grav: 260 });
           burst(gx, RING.cy, 100, { speed: 780, min: 100, size: 10, color: '#fff1a8', life: 0.8 });
           burst(gx, RING.cy, 1, { kind: 'ring', color: '#ff9d1c', size: 360, life: 1.0, speed: 0, min: 0 });
@@ -1240,7 +1290,7 @@ function handleEvents() {
           for (let k = 0; k < 90; k++) spawn({ x: gx + (Math.random() - 0.5) * 120, y: RING.cy + (Math.random() - 0.5) * 120, vx: (Math.random() - 0.5) * 900, vy: -300 - Math.random() * 700, life: 0, max: 1.4 + Math.random() * 0.9, size: 7 + Math.random() * 5, color: cols[k % cols.length], add: false, grav: 1100, kind: 'confetti', rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14 });
           burst(gx, RING.cy, 1, { kind: 'ring', color: '#ffee00', size: 260, life: 0.8, speed: 0, min: 0 });
         }
-        const n = names(); const who = n[e.side];
+        const n = names(); const who = cfg.mode === '2v2' ? (e.side === 0 ? 'HUMAN TEAM' : 'CPU TEAM') : n[e.side];
         bannerShow('GOAL!<small>' + who + ' SCORES</small>', 'goal');
         break;
       }
@@ -1251,9 +1301,9 @@ function handleEvents() {
 }
 
 function flames(dt) {
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < sim.cars.length; i++) {
     const c = sim.cars[i]; if (!c.boostOn) continue;
-    const st = cfg.cust[i], co = Math.cos(c.th), si = Math.sin(c.th);
+    const st = cfg.cust[i % 2], co = Math.cos(c.th), si = Math.sin(c.th);
     for (const bx of [-13, 15]) {
       const lx = bx * c.s, ly = 42;
       const wx = c.x + lx * co - ly * si, wy = c.y + lx * si + ly * co;
@@ -1266,7 +1316,7 @@ function flames(dt) {
     if (c.y > FLOOR - 120 && Math.random() < 0.5) spawn({ x: c.x + (Math.random() - 0.5) * 80, y: FLOOR - 4, vx: (Math.random() - 0.5) * 260, vy: -30 - Math.random() * 60, life: 0, max: 0.5, size: 11, color: '#d9efe0', add: false, kind: 'dust' });
   }
   // wheel dust
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < sim.cars.length; i++) {
     const c = sim.cars[i];
     if (c.grounded && Math.abs(c.vx) > 380 && Math.random() < 0.35) spawn({ x: c.x - Math.sign(c.vx) * 60, y: FLOOR - 6, vx: -c.vx * 0.15 + (Math.random() - 0.5) * 40, vy: -40 - Math.random() * 50, life: 0, max: 0.45, size: 8, color: '#d9efe0', add: false, kind: 'dust' });
   }
@@ -1334,7 +1384,7 @@ function paintArena(g) {
   const tg = g.createLinearGradient(XB, 0, XR, 0); tg.addColorStop(0, 'rgb(' + BLUE + ')'); tg.addColorStop(0.5, '#eaf2ff'); tg.addColorStop(1, 'rgb(' + ORG + ')');
   g.fillStyle = tg; g.fillRect(XB, ay, XR - XB, 4); g.fillRect(XB, ay + ah - 4, XR - XB, 4);
   g.font = '400 27px Bungee, "Arial Black", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = tg;
-  for (let k = 0; k < 4; k++) { const cx = XB + (XR - XB) * (k + 0.5) / 4; g.fillText('ROCKET GLOVE ARENA', cx, ay + ah / 2 + 2); }
+  for (let k = 0; k < 4; k++) { const cx = XB + (XR - XB) * (k + 0.5) / 4; g.fillText('ROCKET RINGS', cx, ay + ah / 2 + 2); }
   g.fillStyle = 'rgba(255,255,255,.35)';
   for (let k = 1; k < 4; k++) { const cx = XB + (XR - XB) * k / 4; polyPath(g, [[cx, ay + 18], [cx + 7, ay + 27], [cx, ay + 36], [cx - 7, ay + 27]]); g.fill(); }
 
@@ -1527,18 +1577,18 @@ function render(dt) {
   ctx.drawImage(getArenaBg(), 0, 0, W, H);
   drawRing(RING.lx, ringFlash[0]); drawRing(RING.rx2, ringFlash[1]);
   if (sim) {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < sim.cars.length; i++) {
       const c = sim.cars[i], h = FLOOR - (c.y + 40), k = clamp(1 - h / 600, 0.2, 1);
       ctx.fillStyle = 'rgba(13,27,38,' + (0.25 * k) + ')'; ctx.beginPath(); ctx.ellipse(c.x, FLOOR - 1, 80 * k, 7 * k, 0, 0, 7); ctx.fill();
     }
     drawBall(sim.ball);
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < sim.cars.length; i++) {
       const c = sim.cars[i];
-      drawCar(ctx, cfg.cust[i], { x: c.x, y: c.y, th: c.th, vs: c.vs, rot: c.wheelRot, ext: c.glove.ext, boostOn: c.boostOn, t: now, num: i + 1 });
+      drawCar(ctx, cfg.cust[i % 2], { x: c.x, y: c.y, th: c.th, vs: c.vs, rot: c.wheelRot, ext: c.glove.ext, boostOn: c.boostOn, t: now, num: i + 1 });
     }
-    if (!demo) for (let i = 0; i < 2; i++) {
-      const c = sim.cars[i]; const n = names()[i];
-      ctx.font = '400 34px Bungee, Arial Black, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 7; ctx.strokeStyle = '#0d1b26'; ctx.fillStyle = i === 0 ? '#9cc3ff' : '#ff9a9e';
+    if (!demo) for (let i = 0; i < sim.cars.length; i++) {
+      const c = sim.cars[i]; const n = sim.cars.length === 4 ? (i < 2 ? (i === 0 ? names()[0] : names()[1]) : (i === 2 ? 'CPU 1' : 'CPU 2')) : names()[i];
+      ctx.font = '400 34px Bungee, Arial Black, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 7; ctx.strokeStyle = '#0d1b26'; ctx.fillStyle = (sim.cars.length === 4 ? (i < 2 ? '#9cc3ff' : '#ff9a9e') : (i === 0 ? '#9cc3ff' : '#ff9a9e'));
       const ty = Math.max(46, c.y - 82); ctx.strokeText(n, c.x, ty); ctx.fillText(n, c.x, ty);
     }
   }
@@ -1577,7 +1627,19 @@ function buildGarage() {
     PAL[key].forEach((col) => { const b = document.createElement('button'); b.className = 'sw' + (st[key] === col ? ' on' : ''); b.style.background = col; b.setAttribute('aria-label', label + ' ' + col); b.title = colorOwned(garageP,key,col) ? 'Owned' : '50 coins'; b.textContent = colorOwned(garageP,key,col) ? '' : '50'; b.style.fontSize = '8px'; b.style.color = '#fff'; b.style.textShadow = '0 1px 2px #000'; b.style.opacity = colorOwned(garageP,key,col) ? '1' : '.8'; b.onclick = () => buyColor(garageP,key,col); c.append(b); });
   });
   const ex = row('Goal FX');
-  [['default','DEFAULT',0],['boom','BOOM',100],['stars','STARS',250],['bang','BANG',500]].forEach(([id,label,cost]) => { const b=document.createElement('button'); b.className='chip'+(economy.explosion===id?' on':''); const owned=economy.explosions.includes(id); b.textContent=label+(owned?' ✓':(cost?' · '+cost+'🪙':'')); b.onclick=()=>{ if(!owned){if(economy.coins<cost){alert('Not enough coins!');return;} economy.coins-=cost; economy.explosions.push(id);} economy.explosion=id; saveEconomy(); buildGarage(); }; ex.append(b); });
+  [['default','DEFAULT',0],['boom','BOOM',100],['stars','STARS',250],['bang','BANG',500],['void','VOID',null]].forEach(([id,label,cost]) => {
+    const b=document.createElement('button');
+    b.className='chip'+(economy.explosion===id?' on':'');
+    const owned=economy.explosions.includes(id);
+    b.textContent = id === 'void' ? (owned ? 'VOID ✓' : 'VOID 🔒') : label+(owned?' ✓':(cost?' · '+cost+'🪙':''));
+    b.title = id === 'void' && !owned ? 'Secret goal explosion' : (owned ? 'Owned' : 'Buy for '+cost+' coins');
+    b.onclick=()=>{
+      if (id === 'void' && !owned) { alert('This is a secret goal explosion.'); return; }
+      if(!owned){if(economy.coins<cost){alert('Not enough coins!');return;} economy.coins-=cost; economy.explosions.push(id);}
+      economy.explosion=id; saveEconomy(); buildGarage();
+    };
+    ex.append(b);
+  });
   document.querySelectorAll('#gTabs button').forEach((b) => b.classList.toggle('on', +b.dataset.p === garageP));
 }
 document.querySelectorAll('#gTabs button').forEach((b) => { b.onclick = () => { garageP = +b.dataset.p; buildGarage(); }; });
@@ -1615,8 +1677,8 @@ function checkEnd() {
   resultShown = true; resultTimer = 0; state = 'over';
   const [a, b] = sim.score, n = names();
   let title = 'DRAW', sub = 'Level after 2:30';
-  if (a > b) { title = cfg.mode === 'ai' ? 'YOU WIN!' : names()[0].toUpperCase() + ' WINS'; sub = 'Full time'; earnCoins(100); }
-  else if (b > a) { title = cfg.mode === 'ai' ? 'CPU WINS' : names()[1].toUpperCase() + ' WINS'; sub = cfg.mode === 'ai' ? 'Try again, or lower the CPU difficulty in Settings' : 'Full time'; }
+  if (a > b) { title = cfg.mode === 'ai' ? 'YOU WIN!' : (cfg.mode === '2v2' ? 'HUMAN TEAM WINS!' : names()[0].toUpperCase() + ' WINS'); sub = 'Full time'; earnCoins(100); }
+  else if (b > a) { title = cfg.mode === 'ai' ? 'CPU WINS' : (cfg.mode === '2v2' ? 'CPU TEAM WINS!' : names()[1].toUpperCase() + ' WINS'); sub = cfg.mode === 'ai' ? 'Try again, or lower the CPU difficulty in Settings' : 'Full time'; }
   $('resTitle').textContent = title; $('resScore').textContent = a + ' - ' + b; $('resSub').textContent = sub;
   stickEnd(); touch.boost = false; btnBoost.classList.remove('down');
   showScreen('scrResult');
@@ -1663,7 +1725,7 @@ $('setVol').value = Math.round(cfg.vol * 100); $('setOp').value = Math.round(cfg
 document.querySelectorAll('#modeSeg button').forEach((b) => { b.onclick = () => { if (b.disabled) return; cfg.mode = b.dataset.mode; saveCfg(); applyCfg(); }; });
 $('btnPlay').onclick = startMatch;
 $('btnCustom').onclick = () => showScreen('scrCustom');
-$('btnSettings').onclick = () => showScreen('scrSettings');
+$('btnSettings').onclick = () => { buildKeybindSettings(); showScreen('scrSettings'); };
 $('btnHow').onclick = () => showScreen('scrHow');
 document.querySelectorAll('[data-close]').forEach((b) => { b.onclick = () => { saveCfg(); showScreen(state === 'menu' ? 'scrMenu' : 'scrPause'); }; });
 $('btnPause').onclick = pause;
@@ -1680,7 +1742,20 @@ $('setOp').oninput = (e) => { cfg.op = e.target.value / 100; applyCfg(); saveCfg
 $('btnRedeemCode').onclick = () => {
   const field = $('devCode');
   const status = $('devCodeStatus');
-  if (field.value.trim() !== 'rocketringsfs') {
+  const code = field.value.trim();
+  if (code === 'THEEND') {
+    if (economy.explosions.includes('void')) {
+      status.textContent = 'VOID has already been unlocked on this device.';
+      return;
+    }
+    economy.explosions.push('void');
+    saveEconomy();
+    field.value = '';
+    status.textContent = 'THEEND accepted! The VOID goal explosion is now unlocked in the Garage.';
+    if (!$('scrCustom').hidden) buildGarage();
+    return;
+  }
+  if (code !== 'rocketringsfs') {
     status.textContent = 'Invalid code.';
     return;
   }
@@ -1715,75 +1790,260 @@ window.__rga = { get sim() { return sim; }, startMatch, pause, resume, cfg: () =
 
 </script>
 
+<style>
+/* Compact, game-styled playlist controls */
+#musicPlayer {
+    width: min(270px, calc(100vw - 24px)) !important;
+    max-width: min(270px, calc(100vw - 24px)) !important;
+    padding: 9px 10px !important;
+    background: rgba(12, 19, 29, .94) !important;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 12px !important;
+    box-shadow: 0 5px 18px rgba(0,0,0,.28);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+}
+#songName {
+    flex: 1 0 100%;
+    min-width: 0;
+    color: #f3f6ff;
+    font: 600 12px/1.3 Arial, sans-serif !important;
+    letter-spacing: .1px;
+}
+#musicPlayer button {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 30px;
+    margin: 0 !important;
+    padding: 6px 10px !important;
+    border: 1px solid rgba(255,255,255,.18) !important;
+    border-radius: 7px !important;
+    background: linear-gradient(180deg, #34465d, #243448) !important;
+    color: #fff !important;
+    font: 700 12px/1.1 Arial, sans-serif !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    white-space: nowrap;
+    cursor: pointer;
+}
+#musicPlayer button:hover {
+    background: linear-gradient(180deg, #45617f, #2e4762) !important;
+}
+#musicPlayer button:active { transform: translateY(1px); }
+@media (max-width: 420px) {
+    #musicPlayer { top: 42px !important; padding: 7px 8px !important; }
+    #musicPlayer button { min-height: 28px; padding: 6px 7px !important; }
+}
+</style>
+
 <audio id="bgMusic"></audio>
 
 <div id="musicPlayer" style="
     position:fixed;
-    top:15px;
-    left:15px;
+    top:44px;
+    left:12px;
     z-index:99999;
-    background:#222;
+    background:rgba(20,20,20,.88);
     color:white;
-    padding:12px;
+    padding:8px 10px;
     border-radius:12px;
     font-family:Arial;
+    max-width:min(250px, 58vw);
+    box-sizing:border-box;
 ">
-    <div id="songName">🎵 Loading playlist...</div>
+    <div id="songName" style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">🎵 Playlist ready · 6 tracks</div>
     <button id="musicBtn">▶ Play Music</button>
     <button id="nextBtn">⏭ Next</button>
 </div>
 
 <script>
-const songs = [
+const defaultSongs = [
     "Ngbch.mp3",
     "Different Heaven - Nekozilla.mp3",
     "Elektronomia - The Sky High.mp3",
     "Ship Wrek - Ark.mp3",
     "Syn Cole - Feel Good.mp3",
     "TULE, Chris Linton - Fearless.mp3"
-];
+].map(src => ({ name: src, src, kind: "default" }));
 
 const music = document.getElementById("bgMusic");
 const musicBtn = document.getElementById("musicBtn");
 const nextBtn = document.getElementById("nextBtn");
 const songName = document.getElementById("songName");
+const mp3Picker = document.getElementById("mp3Picker");
+const addMp3Btn = document.getElementById("btnAddMp3");
+const clearMp3Btn = document.getElementById("btnClearMp3");
+const keepDefaultsBtn = document.getElementById("btnKeepDefaults");
+const ownMusicStatus = document.getElementById("ownMusicStatus");
 
+let customSongs = [];
+let playlist = [...defaultSongs];
 let currentSong = 0;
+let keepDefaultSongs = localStorage.getItem("rgaKeepDefaultSongs") !== "false";
+let dbPromise;
+let activeObjectUrls = [];
 
-function playSong() {
-    music.src = songs[currentSong];
-    songName.textContent = "🎵 " + songs[currentSong];
-    music.play().then(() => {
-        musicBtn.textContent = "⏸ Pause Music";
-    }).catch(() => {
-        musicBtn.textContent = "▶ Play Music";
+function openMusicDB() {
+    if (!('indexedDB' in window)) return Promise.reject(new Error('Browser storage is unavailable.'));
+    if (!dbPromise) dbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open('RocketRingsOwnMusic', 1);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains('tracks')) db.createObjectStore('tracks', { keyPath: 'id' });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Could not open music storage.'));
+    });
+    return dbPromise;
+}
+
+async function getSavedTracks() {
+    const db = await openMusicDB();
+    return new Promise((resolve, reject) => {
+        const request = db.transaction('tracks', 'readonly').objectStore('tracks').getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error || new Error('Could not load saved MP3s.'));
     });
 }
 
-// Automatically play next song
+async function saveTracks(files) {
+    const db = await openMusicDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('tracks', 'readwrite');
+        const store = tx.objectStore('tracks');
+        files.forEach((file, index) => store.put({ id: `${Date.now()}-${index}-${file.name}`, name: file.name, file }));
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error('Could not save MP3 files.'));
+        tx.onabort = () => reject(tx.error || new Error('Saving MP3 files was cancelled.'));
+    });
+}
+
+async function deleteSavedTracks() {
+    const db = await openMusicDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('tracks', 'readwrite');
+        tx.objectStore('tracks').clear();
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error('Could not clear saved MP3s.'));
+    });
+}
+
+function refreshPlaylist() {
+    const wasPlaying = !music.paused;
+    const oldTrack = playlist[currentSong];
+    const oldIdentity = oldTrack ? `${oldTrack.kind}:${oldTrack.name}` : '';
+    activeObjectUrls.forEach(URL.revokeObjectURL);
+    activeObjectUrls = [];
+    const custom = customSongs.map(track => {
+        const url = URL.createObjectURL(track.file);
+        activeObjectUrls.push(url);
+        return { name: track.name, src: url, kind: 'custom' };
+    });
+    playlist = keepDefaultSongs || custom.length === 0 ? [...defaultSongs, ...custom] : custom;
+    const nextIndex = playlist.findIndex(track => `${track.kind}:${track.name}` === oldIdentity);
+    currentSong = nextIndex >= 0 ? nextIndex : 0;
+    if (wasPlaying && playlist.length) playSong();
+    else {
+        music.pause();
+        music.removeAttribute('src');
+        music.load();
+        songName.textContent = `🎵 Playlist ready · ${playlist.length} tracks`;
+        musicBtn.textContent = '▶ Play Music';
+    }
+    keepDefaultsBtn.classList.toggle('on', keepDefaultSongs);
+    keepDefaultsBtn.textContent = keepDefaultSongs ? 'ON' : 'OFF';
+    keepDefaultsBtn.setAttribute('aria-pressed', String(keepDefaultSongs));
+}
+
+function playSong() {
+    if (!playlist.length) {
+        songName.textContent = '🎵 Add an MP3 to start';
+        return;
+    }
+    const track = playlist[currentSong];
+    music.src = track.src;
+    songName.textContent = '🎵 ' + track.name;
+    music.play().then(() => {
+        musicBtn.textContent = '⏸ Pause Music';
+    }).catch(() => {
+        musicBtn.textContent = '▶ Play Music';
+        songName.textContent = '🎵 Tap Play Music to start';
+    });
+}
+
 music.addEventListener("ended", () => {
-    currentSong = (currentSong + 1) % songs.length;
+    currentSong = (currentSong + 1) % playlist.length;
     playSong();
 });
 
-// Play / Pause
 musicBtn.addEventListener("click", () => {
     if (music.paused) {
-        if (!music.src) {
-            playSong();
-        } else {
-            music.play();
-            musicBtn.textContent = "⏸ Pause Music";
-        }
+        if (!music.src) playSong();
+        else music.play().then(() => { musicBtn.textContent = '⏸ Pause Music'; }).catch(() => {});
     } else {
         music.pause();
-        musicBtn.textContent = "▶ Play Music";
+        musicBtn.textContent = '▶ Play Music';
     }
 });
 
-// Next song
 nextBtn.addEventListener("click", () => {
-    currentSong = (currentSong + 1) % songs.length;
+    if (!playlist.length) return;
+    currentSong = (currentSong + 1) % playlist.length;
     playSong();
 });
+
+addMp3Btn.addEventListener('click', () => mp3Picker.click());
+mp3Picker.addEventListener('change', async () => {
+    const files = Array.from(mp3Picker.files || []).filter(file => file.name.toLowerCase().endsWith('.mp3') || file.type === 'audio/mpeg');
+    if (!files.length) {
+        ownMusicStatus.textContent = 'Please choose MP3 files.';
+        mp3Picker.value = '';
+        return;
+    }
+    try {
+        await saveTracks(files);
+        customSongs = await getSavedTracks();
+        refreshPlaylist();
+        ownMusicStatus.textContent = `${customSongs.length} custom MP3${customSongs.length === 1 ? '' : 's'} saved in this browser.`;
+    } catch (error) {
+        ownMusicStatus.textContent = error.message || 'Could not save those MP3 files. Try a smaller selection.';
+    }
+    mp3Picker.value = '';
+});
+
+clearMp3Btn.addEventListener('click', async () => {
+    try {
+        await deleteSavedTracks();
+        customSongs = [];
+        refreshPlaylist();
+        ownMusicStatus.textContent = 'Your custom music has been cleared. Default songs are available.';
+    } catch (error) {
+        ownMusicStatus.textContent = error.message || 'Could not clear custom music.';
+    }
+});
+
+keepDefaultsBtn.addEventListener('click', () => {
+    keepDefaultSongs = !keepDefaultSongs;
+    localStorage.setItem('rgaKeepDefaultSongs', String(keepDefaultSongs));
+    refreshPlaylist();
+    ownMusicStatus.textContent = keepDefaultSongs
+        ? 'Your MP3s will play alongside the original songs.'
+        : 'Your MP3s will replace the original songs.';
+});
+
+(async function initOwnMusic() {
+    try {
+        customSongs = await getSavedTracks();
+        refreshPlaylist();
+        ownMusicStatus.textContent = customSongs.length
+            ? `${customSongs.length} custom MP3${customSongs.length === 1 ? '' : 's'} loaded from this browser.`
+            : 'Add MP3 files from your device. Your files stay in this browser.';
+    } catch (error) {
+        ownMusicStatus.textContent = 'MP3 saving is not supported here; imported songs may only last until you close this page.';
+    }
+})();
 </script>
