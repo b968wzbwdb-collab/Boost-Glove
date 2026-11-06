@@ -1107,6 +1107,13 @@ let ringFlash = [0, 0], ballPulse = 0, goalSlow = 0;
 let resultShown = false, resultTimer = 0, now = 0, bangFlash = 0;
 
 function names() { return [String(cfg.p1Name || (cfg.mode === 'ai' ? 'YOU' : 'P1')).trim().slice(0,14) || 'P1', String(cfg.p2Name || (cfg.mode === 'ai' ? 'CPU' : 'P2')).trim().slice(0,14) || 'P2']; }
+// In 2v2, slots 0 and 1 are the human teammates and use the two garage loadouts.
+// Slots 2 and 3 are the CPU teammates and always use matching blue Rally cars.
+const CPU_TEAM_STYLE = { design: 0, car: '#3b6fd4', glove: '#3b6fd4', flame: '#3b6fd4' };
+function matchCarStyle(i) {
+  if (cfg.mode === '2v2' && sim && sim.cars.length === 4 && i >= 2) return CPU_TEAM_STYLE;
+  return cfg.cust[i % 2];
+}
 function newSim(isDemo) {
   return Sim.create({ mode: cfg.mode, demo: isDemo, styles: cfg.cust, aiLevel: isDemo ? 1 : cfg.ai });
 }
@@ -1583,7 +1590,7 @@ function render(dt) {
     drawBall(sim.ball);
     for (let i = 0; i < sim.cars.length; i++) {
       const c = sim.cars[i];
-      drawCar(ctx, cfg.cust[i % 2], { x: c.x, y: c.y, th: c.th, vs: c.vs, rot: c.wheelRot, ext: c.glove.ext, boostOn: c.boostOn, t: now, num: i + 1 });
+      drawCar(ctx, matchCarStyle(i), { x: c.x, y: c.y, th: c.th, vs: c.vs, rot: c.wheelRot, ext: c.glove.ext, boostOn: c.boostOn, t: now, num: i + 1 });
     }
     if (!demo) for (let i = 0; i < sim.cars.length; i++) {
       const c = sim.cars[i]; const n = sim.cars.length === 4 ? (i < 2 ? (i === 0 ? names()[0] : names()[1]) : (i === 2 ? 'CPU 1' : 'CPU 2')) : names()[i];
@@ -1602,6 +1609,8 @@ let garageP = 0;
 const pcv = $('cvPrev'), pctx = pcv.getContext('2d');
 function buildGarage() {
   const st = cfg.cust[garageP];
+  const garageTabs = document.querySelectorAll('#gTabs button');
+  if (garageTabs[1]) garageTabs[1].textContent = cfg.mode === '2v2' ? 'PLAYER 2' : 'PLAYER 2 / CPU';
   const box = $('gOpts'); box.innerHTML = '';
   const wallet = document.createElement('div'); wallet.className = 'hint'; wallet.textContent = 'COINS: ' + economy.coins; box.append(wallet);
   const row = (label) => { const r = document.createElement('div'); r.className = 'opt'; const s = document.createElement('span'); s.textContent = label; const c = document.createElement('div'); c.className = 'chips'; r.append(s, c); box.append(r); return c; };
